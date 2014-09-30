@@ -27,6 +27,9 @@
 (define (downcase str)
   (list->string (map char-downcase (string->list str))))
 
+(define (upcase str)
+  (list->string (map char-upcase (string->list str))))
+
 
 ;;;
 ;;; Exception stringification

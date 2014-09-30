@@ -29,8 +29,9 @@
 ;;
 ;; Various log messages and levels
 ;;
+(define longest-level-length (string-length "[critical] "))
 (define (log level msg . rest)
-  (let ((log-message (string-append (stringify "[" level "]: ")
+  (let ((log-message (string-append "[" (keyword->string level) "] "
                                     (apply stringify (cons msg rest))))
         (out         (log-file)))
     (display (string-append log-message "\n"))
@@ -39,11 +40,11 @@
           (write-line log-message out)
           (flush-output out)))))
 
-(define (log-debug msg . rest) (apply log (append (list #:debug msg) rest)))
-(define (log-verbose msg . rest) (apply log (append (list #:verbose msg) rest)))
-(define (log-info msg . rest) (apply log (append (list #:info msg) rest)))
-(define (log-warning msg . rest) (apply log (append (list #:warning msg) rest)))
-(define (log-error msg . rest) (apply log (append (list #:error msg) rest)))
+(define (log-debug    msg . rest) (apply log (append (list #:debug msg) rest)))
+(define (log-verbose  msg . rest) (apply log (append (list #:verbose msg) rest)))
+(define (log-info     msg . rest) (apply log (append (list #:info msg) rest)))
+(define (log-warning  msg . rest) (apply log (append (list #:warning msg) rest)))
+(define (log-error    msg . rest) (apply log (append (list #:error msg) rest)))
 (define (log-critical msg . rest) (apply log (append (list #:critical msg) rest)))
 
 (define log-file
@@ -60,6 +61,7 @@
 (define (start-server server-config)
   (if (not server-running)
       (begin
+        (log-info "=== Starting Server on port " (server-config-port server-config))
         (setup-server server-config)
         (run-server server-config))
       (log-warning "Server already started")))
@@ -268,7 +270,7 @@
     (let ((request         (read-http-request in))
           (response        (make-http-response))
           (request-handler (server-config-request-handler server-config)))
-      (log-info (http-request-method request)
+      (log-info (upcase (keyword->string (http-request-method request)))
                 " request for "
                 (http-request-path request))
       
