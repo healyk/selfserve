@@ -1,5 +1,7 @@
 (require-extension tcp srfi-1 posix)
 
+(define version "0.2")
+
 ;;;
 ;;; Server configuration
 ;;;
@@ -178,7 +180,7 @@
 (define (make-http-response #!optional (status status:not-found))
   (%make-http-response "HTTP/1.1"
                        status
-                       (list (list Server: "Small Scheme Server 0.1")
+                       (list (list Server: (string-append "SelfServe " version))
                              (list Content-Type: "text/html; charset=UTF-8")
                              (list Date: (seconds->string)))
                        ""))

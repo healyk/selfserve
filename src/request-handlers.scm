@@ -1,5 +1,4 @@
 (require-extension posix files
-                   srfi-13
                    srfi-4
                    srfi-13)
 
@@ -7,15 +6,18 @@
 ;; Creates a well-constructed path from various file arguments
 ;;
 (define (join-path first . rest)
-  (define (join-path-iter result lst)
-    (if (null? lst)
-        result
-        (join-path-iter (string-append result "/" (string-trim (car lst) #\/))
-                        (cdr lst))))
+  ;; Takes a path - a string - and removes any dot references.
+  (define (normalize-path path)
+    (let ((split-paths (string-split path "/")))
+      (fold (lambda (result path)
+              (string-append path "/" result))
+              ""
+              (filter (lambda (x)
+                        (not (or (string=? x ".") (string=? x ".."))))
+                      split-paths))))
 
-  (join-path-iter "."
-                  (cons (if (string-prefix? first "./") (substring first 2) first)
-                        rest)))
+  (apply string-append
+         (cons "." (map normalize-path (cons first rest)))))
 
 ;;
 ;; Reads all the data in a file.  Assumes it's binary for safety
