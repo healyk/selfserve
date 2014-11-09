@@ -1,6 +1,6 @@
-(require-extension tcp srfi-1 posix)
+(require-extension tcp srfi-1 posix srfi-13)
 
-(define version "0.2")
+(define version "0.2.1")
 
 ;;;
 ;;; Server configuration
@@ -23,7 +23,15 @@
   (%make-server-config port
                        log-filename
                        request-handler
-                       root-dir))
+                       root-dir
+                       resource-dirs))
+
+(define (write-server-config cfg out)
+  (write `(make-server-config
+           #:port            ,(server-config-port cfg)
+           #:log-filename    ,(server-config-log-filename cfg)
+           #:root-dir        ,(server-config-root-dir cfg))
+         out))
 
 (define listener '())
 (define server-running #f)
@@ -127,7 +135,7 @@
     (let ((first-line (string-split (car lines) " "))
           (headers    (drop lines 1)))
       (make-http-request str
-                         (string->keyword (downcase (car first-line)))
+                         (string->keyword (string-downcase (car first-line)))
                          (cadr first-line)
                          (caddr first-line)
                          (string->number (cadr (string-split (caddr first-line) "/")))
@@ -137,7 +145,8 @@
 ;; Reads in an http request from an input port.  Will return a http-request.
 ;;
 (define (read-http-request in)
-  (define terminating-seq (reverse (string->list http-header-terminator)))
+  (define terminating-seq
+    (reverse (string->list http-header-terminator)))
   
   (define (end-of-request? lst current)
     (if (> (length lst) 2)
@@ -154,7 +163,7 @@
           (string->http-request (list->string (reverse results))))))
 
 ;;;
-;;; HTTP Response
+;;; Common HTTP Response codes
 ;;;
 (define status:ok '(200 "OK"))
 (define status:not-found '(404 "Not Found"))
@@ -272,7 +281,7 @@
     (let ((request         (read-http-request in))
           (response        (make-http-response))
           (request-handler (server-config-request-handler server-config)))
-      (log-info (upcase (keyword->string (http-request-method request)))
+      (log-info (string-upcase (keyword->string (http-request-method request)))
                 " request for "
                 (http-request-path request))
       
@@ -284,15 +293,16 @@
     (if (tcp-accept-ready? listener)
         (let-values (((in out) (tcp-accept listener))
                      ((exp-handler) (current-exception-handler)))
-          (call-with-current-continuation
+          (call/cc
            (lambda (cc)
              (with-exception-handler
               (lambda (exp)
-                (with-exception-handler exp-handler
-                                        (lambda ()
-                                          (log-debug "Double exception")
-                                          (serve-exp-response exp out)
-                                          (cc '())))
+                (with-exception-handler
+                 exp-handler
+                 (lambda ()
+                   (log-debug "Caught exception when handling exception")
+                   (serve-exp-response exp out)
+                   (cc '())))
                 (cc '()))
               (lambda ()
                 (process-tcp-request in out)))))

@@ -2,6 +2,10 @@
                    srfi-4
                    srfi-13)
 
+;;;
+;;; File path reading
+;;;
+
 ;;
 ;; Creates a well-constructed path from various file arguments
 ;;
@@ -53,6 +57,7 @@
 ;;; 404 will cause the next handler to be called to search for that
 ;;; resource.
 ;;;
+;;; Note that once a requests status has been changed all r
 
 (define (chain-request-handlers handler-first . rest-handlers)
   (let ((handlers (cons handler-first rest-handlers)))

@@ -7,8 +7,8 @@
 (require-extension srfi-1)
 
 ;;
-;; Concatinates a series of strings together.  It will stringify any
-;; parameters passed in it can.
+;; Concatinates a series of strings together.  It will convert any
+;; parameters it can to strings.
 ;;
 (define (stringify s1 . rest)
   (define (stringify-param param)
@@ -23,13 +23,6 @@
      ((condition? param)  (exn->string param))
      (else param)))
   (apply string-append (map stringify-param (cons s1 rest))))
-
-(define (downcase str)
-  (list->string (map char-downcase (string->list str))))
-
-(define (upcase str)
-  (list->string (map char-upcase (string->list str))))
-
 
 ;;;
 ;;; Exception stringification
@@ -62,10 +55,11 @@
 ;;
 ;; Replaces characters in an string with the html-escaped equivalent
 ;;
+(define html-escape-codes
+  '((#\< "&lt;")
+    (#\> "&gt;")))
+
 (define (escape-html str)
-  (define html-escape-codes
-    '((#\< "&lt;")
-      (#\> "&gt;")))
   (apply stringify
          (map (lambda (chr)
                 (let ((replace-chr (assoc chr html-escape-codes)))
